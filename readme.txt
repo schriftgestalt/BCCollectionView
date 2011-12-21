@@ -1,5 +1,9 @@
 # BCCollectionView
 
+This is a really rough, untested and unpolished implementation. Please do not use this as is!!!!
+Georg
+
+
 BCCollectionView is intended as a replacement for NSCollectionView (and possibly IKImageBrowserView). It is designed to work with a lot of items and only loads the views that it actually needs.
 
 Unlike NSCollectionView, BCCollectionView smoothly displays 300.000+ items.
