@@ -13,7 +13,7 @@
 
 - (NSString *)description
 {
-  return [NSString stringWithFormat:@"i:%i r:%i c:%i", (int)itemIndex, (int)rowIndex, (int)columnIndex];
+  return [NSString stringWithFormat:@"<%@ %p> i:%i r:%i c:%i", [self className], self, (int)itemIndex, (int)rowIndex, (int)columnIndex];
 }
 
 @end

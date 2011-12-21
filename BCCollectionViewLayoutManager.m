@@ -27,29 +27,30 @@
 
 - (void)enumerateItems:(BCCollectionViewLayoutOperationIterator)itemIterator completionBlock:(dispatch_block_t)completionBlock
 {
-  BCCollectionViewLayoutOperation *operation = [[BCCollectionViewLayoutOperation alloc] init];
-  [operation setCollectionView:collectionView];
-  [operation setLayoutCallBack:itemIterator];
-  [operation setLayoutCompletionBlock:completionBlock];
+	BCCollectionViewLayoutOperation *operation = [[BCCollectionViewLayoutOperation alloc] init];
+	[operation setCollectionView:collectionView];
+	[operation setLayoutCallBack:itemIterator];
+	[operation setLayoutCompletionBlock:completionBlock];
   
 // if ([queue operationCount] > 10)
-    [queue cancelAllOperations];
-  [queue addOperation:[operation autorelease]];
+	[queue cancelAllOperations];
+	[queue addOperation:[operation autorelease]];
 }
 
 - (void)dealloc
 {
-  [itemLayouts release];
-  [queue release];
-  [super dealloc];
+	[itemLayouts release];
+	[queue release];
+	[super dealloc];
 }
 
 #pragma mark -
 #pragma mark Primitives
 
-- (NSUInteger)maximumNumberOfItemsPerRow
+- (NSUInteger) maximumNumberOfItemsPerRow
 {
-  return MAX(1, [collectionView frame].size.width/[self cellSize].width);
+	//return MAX(1, [collectionView frame].size.width/[self cellSize].width);
+	return MAX(1, ([collectionView frame].size.width - (2 * collectionView.border ))/[self cellSize].width);
 }
 
 - (NSSize)cellSize

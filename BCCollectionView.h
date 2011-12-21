@@ -11,42 +11,45 @@
 @class BCCollectionViewLayoutManager;
 @interface BCCollectionView : NSView
 {
-  IBOutlet id<BCCollectionViewDelegate> delegate;
-  BCCollectionViewLayoutManager *layoutManager;
-  
-  NSArray *contentArray;
-  NSArray *groups;
-  
-  NSMutableArray      *reusableViewControllers;
-  NSMutableDictionary *visibleViewControllers;
-  NSMutableIndexSet   *selectionIndexes;
-  NSMutableDictionary *visibleGroupViewControllers;
-  
-  NSColor *backgroundColor;
-  NSUInteger  numberOfPreRenderedRows;
-  
+	IBOutlet id<BCCollectionViewDelegate> delegate;
+	BCCollectionViewLayoutManager *layoutManager;
+
+	NSArray *contentArray;
+	NSArray *groups;
+
+	NSMutableArray      *reusableViewControllers;
+	NSMutableDictionary *visibleViewControllers;
+	NSMutableIndexSet   *selectionIndexes;
+	NSMutableDictionary *visibleGroupViewControllers;
+
+	NSColor				*backgroundColor;
+	NSUInteger			numberOfPreRenderedRows;
+	NSUInteger			_border;
+
+	NSPoint				mouseDownLocation;
+	NSPoint				mouseDraggedLocation;
+	NSInteger			dragHoverIndex;
+	BOOL				selectionChangedDisabled;
+	NSUInteger			lastSelectionIndex;
 @private
-  NSPoint mouseDownLocation;
-  NSPoint mouseDraggedLocation;
-  NSRect previousFrameBounds;
+	NSRect				previousFrameBounds;
   
-  NSUInteger lastSelectionIndex;
-  NSIndexSet *originalSelectionIndexes;
-  NSInteger dragHoverIndex;
+
+	NSIndexSet *		originalSelectionIndexes;
   
-  BOOL isDragging;
-  BOOL firstDrag;
-  BOOL selectionChangedDisabled;
-  
-  NSString *zoomValueObserverKey;
-  CGFloat lastPinchMagnification;
-  
-  NSString *accumulatedKeyStrokes;
+	BOOL isDragging;
+	BOOL firstDrag;
+
+
+	NSString *zoomValueObserverKey;
+	CGFloat lastPinchMagnification;
+
+	NSString *accumulatedKeyStrokes;
 }
 @property (nonatomic, assign) id<BCCollectionViewDelegate> delegate;
 @property (nonatomic, retain) NSColor *backgroundColor;
 @property (nonatomic) NSUInteger numberOfPreRenderedRows;
-
+@property (nonatomic, assign) NSUInteger border;
 //private
 @property (nonatomic, copy) NSIndexSet *originalSelectionIndexes;
 @property (nonatomic, copy) NSArray *contentArray, *groups;

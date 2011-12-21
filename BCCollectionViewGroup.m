@@ -2,7 +2,7 @@
 //  Copyright 2011 Bohemian Coding. All rights reserved.
 
 #import "BCCollectionViewGroup.h"
-#import "CHUserDefaults.h"
+//#import "CHUserDefaults.h"
 
 @implementation BCCollectionViewGroup
 @synthesize title, itemRange;
@@ -34,12 +34,13 @@
 
 - (BOOL)isCollapsed
 {
-  return CHDefaultsBoolForKey([self defaultsIdentifier]);
+  return [[NSUserDefaults standardUserDefaults] boolForKey:[self defaultsIdentifier]];
 }
 
 - (void)setIsCollapsed:(BOOL)isCollapsed
 {
-  CHDefaultsSetBoolForKey(isCollapsed, [self defaultsIdentifier]);
+	[[NSUserDefaults standardUserDefaults] setBool:isCollapsed forKey:[self defaultsIdentifier]];
+	//CHDefaultsSetBoolForKey(isCollapsed, [self defaultsIdentifier]);
 }
 
 @end
