@@ -12,8 +12,8 @@
 @interface Controller : NSObject <BCCollectionViewDelegate>
 {
 	NSMutableArray *imageContent;
-	BCCollectionView *collectionView;
+	IBOutlet BCCollectionView *collectionView;
+	IBOutlet NSArrayController * imageContentController;
 }
-@property(nonatomic,retain) IBOutlet BCCollectionView *collectionView;
 @property(nonatomic,retain) NSMutableArray *imageContent;
 @end

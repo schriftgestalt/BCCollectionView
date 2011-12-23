@@ -10,6 +10,7 @@
 		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
 		256AC3DA0F4B6AC300CF3369 /* ExampleAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 256AC3D90F4B6AC300CF3369 /* ExampleAppDelegate.m */; };
 		56D45C36149FE15400F703F2 /* CollectionViewGroup.xib in Resources */ = {isa = PBXBuildFile; fileRef = 56D45C35149FE15400F703F2 /* CollectionViewGroup.xib */; };
+		56DBDD3714A53FD0004C4740 /* GSImageCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 56DBDD3614A53FD0004C4740 /* GSImageCell.m */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
@@ -38,6 +39,8 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		56D45C35149FE15400F703F2 /* CollectionViewGroup.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = CollectionViewGroup.xib; sourceTree = "<group>"; };
+		56DBDD3514A53FD0004C4740 /* GSImageCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GSImageCell.h; sourceTree = "<group>"; };
+		56DBDD3614A53FD0004C4740 /* GSImageCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GSImageCell.m; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Example-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Example-Info.plist"; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		93DF163413706EF300D6C085 /* BCCollectionView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BCCollectionView.h; path = ../BCCollectionView.h; sourceTree = SOURCE_ROOT; };
@@ -88,6 +91,8 @@
 				93DF165F1370703900D6C085 /* CellViewController.m */,
 				93DF16631370708900D6C085 /* CellViewController.xib */,
 				56D45C35149FE15400F703F2 /* CollectionViewGroup.xib */,
+				56DBDD3514A53FD0004C4740 /* GSImageCell.h */,
+				56DBDD3614A53FD0004C4740 /* GSImageCell.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -260,6 +265,7 @@
 				93DF164D13706EF300D6C085 /* BCCollectionViewLayoutOperation.m in Sources */,
 				93DF165413706F5300D6C085 /* Controller.m in Sources */,
 				93DF16601370703900D6C085 /* CellViewController.m in Sources */,
+				56DBDD3714A53FD0004C4740 /* GSImageCell.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

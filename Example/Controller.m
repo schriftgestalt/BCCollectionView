@@ -10,13 +10,12 @@
 #import "CellViewController.h"
 
 @implementation Controller
-@synthesize collectionView;
 @synthesize imageContent;
 
 - (void)awakeFromNib
 {
 	[super awakeFromNib];
-	
+	[self willChangeValueForKey:@"imageContent"];
 	imageContent = [[NSMutableArray alloc] init];
 	[imageContent addObject:[NSImage imageNamed:NSImageNameQuickLookTemplate]];
 	[imageContent addObject:[NSImage imageNamed:NSImageNameBluetoothTemplate]];
@@ -77,10 +76,24 @@
 	[imageContent addObject:[NSImage imageNamed:NSImageNameStatusPartiallyAvailable]];
 	[imageContent addObject:[NSImage imageNamed:NSImageNameStatusUnavailable]];
 	[imageContent addObject:[NSImage imageNamed:NSImageNameStatusNone]];
+	[self didChangeValueForKey:@"imageContent"];
 	NSArray * newGroups = [NSArray arrayWithObjects:[BCCollectionViewGroup groupWithTitle:@"first Group" range:NSMakeRange(0, 10)], [BCCollectionViewGroup groupWithTitle:@"second Group" range:NSMakeRange(10, 48)], nil];
-	[self.collectionView reloadDataWithItems:imageContent groups:newGroups emptyCaches:NO];
-	
+//	[self.collectionView reloadDataWithItems:imageContent groups:newGroups emptyCaches:NO];
+	[collectionView bind:@"contentArray" toObject:imageContentController withKeyPath:@"arrangedObjects" options:nil];
+	[collectionView bind:@"selectionIndexes" toObject:imageContentController withKeyPath:@"selectionIndexes" options:nil];
+	[collectionView setGroups:newGroups];
 }
+
+- (void)dealloc {
+	[collectionView unbind:@"contenArray"];
+	[collectionView unbind:@"selectionIndexes"];
+	
+    [imageContent release], imageContent = nil;
+    [super dealloc];
+}
+
+
+
 #pragma mark -
 #pragma mark BCCollectionViewDelegate
 
@@ -102,7 +115,7 @@
 	CellViewController *cell = (CellViewController*)viewController;
 	[cell.imageView setImage:anItem];
 }
-- (NSUInteger)groupHeaderHeightForCollectionView:(BCCollectionView *)collectionView {
+- (NSUInteger) groupHeaderHeightForCollectionView:(BCCollectionView *)collectionView {
 	return 40;
 }	   
 - (NSViewController *)collectionView:(BCCollectionView *)collectionView headerForGroup:(BCCollectionViewGroup *)group {

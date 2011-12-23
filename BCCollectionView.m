@@ -261,17 +261,15 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 		return YES;
 }
 
-- (void)drawItemSelectionForInRect:(NSRect)aRect
-{
-	return;
-	NSRect insetRect = NSInsetRect(aRect, 10, 10);
+- (void) drawItemSelectionForInRect:(NSRect)aRect {
+	NSRect insetRect = NSInsetRect(aRect, 1, 1);
 	if ([self needsToDrawRect:insetRect]) {
 		[[NSColor lightGrayColor] set];
 		[[NSBezierPath bezierPathWithRoundedRect:insetRect xRadius:10 yRadius:10] fill];
 	}
 }
 
-- (void)drawRect:(NSRect)dirtyRect
+- (void) drawRect:(NSRect)dirtyRect
 {
 	NSRect VisibleRect = [self visibleRect];
 	if ([[self window] isMainWindow]) {
@@ -327,7 +325,11 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 	[BezierPath release];
 	
 	[[NSGraphicsContext currentContext] restoreGraphicsState];
-	
+	if ([selectionIndexes count] > 0 && [self shoulDrawSelections]) {
+		for (NSNumber *number in visibleViewControllers)
+			if ([selectionIndexes containsIndex:[number integerValue]])
+				[self drawItemSelectionForInRect:[[[visibleViewControllers objectForKey:number] view] frame]];
+	}
 	[[NSColor grayColor] set];
 	NSFrameRect(BCRectFromTwoPoints(mouseDownLocation, mouseDraggedLocation));
 }
@@ -582,7 +584,6 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 			[self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:index]];
 		}
 	}
-	
 	if (!bulkSelecting)
 		lastSelectionIndex = index;
 }
