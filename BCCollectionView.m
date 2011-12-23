@@ -7,6 +7,10 @@
 #import "BCCollectionViewLayoutItem.h"
 #import "BCCollectionViewGroup.h"
 
+static void *ContentArrayBindingContext = (void *)@"contentArray";
+static void *SelectionIndexesBindingContext = (void *)@"selectionIndexes";
+static void *ItemSizeBindingContext = (void *)@"itemSize";
+
 @implementation BCCollectionView
 @synthesize delegate, contentArray, groups, backgroundColor, originalSelectionIndexes, zoomValueObserverKey, accumulatedKeyStrokes, numberOfPreRenderedRows, layoutManager;
 
@@ -29,7 +33,7 @@
 		layoutManager				= [[BCCollectionViewLayoutManager alloc] initWithCollectionView:self];
 		visibleGroupViewControllers = [[NSMutableDictionary alloc] init];
 		//[self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
-		
+		_border = 10;
 		NSClipView *enclosingClipView = [[self enclosingScrollView] contentView];
 		[enclosingClipView setPostsBoundsChangedNotifications:YES];
 		NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
@@ -39,19 +43,174 @@
 	return self;
 }
 
+- (void)bind:(NSString *)binding
+	toObject:(id)observableObject
+ withKeyPath:(NSString *)keyPath
+	 options:(NSDictionary *)options
+{
+	// Observe the observableObject for changes -- note, pass binding identifier
+	// as the context, so you get that back in observeValueForKeyPath:...
+	// This way you can easily determine what needs to be updated.
+	//UKLog(@"%@ %@, %@, %@",binding, observableObject, [observableObject class], keyPath);
+	
+	if ([binding isEqualToString:@"contentArray"])
+	{
+		[observableObject addObserver:self
+						   forKeyPath:keyPath
+							  options:0
+							  context:ContentArrayBindingContext];
+		
+		// Register what object and what keypath are
+		// associated with this binding
+		if (_observedObjectForContentArray) {
+			[_observedObjectForContentArray release];
+		}
+		_observedObjectForContentArray = [observableObject retain];
+		if (_observedKeyPathForContentArray) {
+			[_observedKeyPathForContentArray release];
+		}
+		_observedKeyPathForContentArray = [keyPath retain];
+		//UKLog(@"observableObject: %@ observedKeyPathForContentArray: %@ array: %@", observableObject, observedKeyPathForContentArray, [observableObject valueForKeyPath:observedKeyPathForContentArray]);
+		
+		//[self setValue:[_observedObjectForContentArray valueForKeyPath:_observedKeyPathForContentArray] forKey:@"contentArray"];
+		[self reloadDataWithItems:[_observedObjectForContentArray valueForKeyPath:_observedKeyPathForContentArray] emptyCaches:NO];
+	}
+	if ([binding isEqualToString:@"selectionIndexes"])
+	{
+		[observableObject addObserver:self
+						   forKeyPath:keyPath
+							  options:0
+							  context:SelectionIndexesBindingContext];
+		
+		// Register what object and what keypath are
+		// associated with this binding
+		if (_observedObjectForSelectionIndexes) {
+			[_observedObjectForSelectionIndexes release];
+		}
+		_observedObjectForSelectionIndexes = [observableObject retain];
+		if (_observedKeyPathForSelectionIndexes) {
+			[_observedKeyPathForSelectionIndexes release];
+		}
+		_observedKeyPathForSelectionIndexes = [keyPath retain];
+		//UKLog(@"observedObjectForSelectionIndex: %@ observedKeyPathForSelectionIndex: %@ intValue: %d", observedObjectForSelectionIndex,observedKeyPathForSelectionIndex, [[observedObjectForSelectionIndex valueForKeyPath:observedKeyPathForSelectionIndex] intValue]);
+		
+		//[self setValue:[_observedObjectForSelectionIndexes valueForKeyPath:_observedKeyPathForSelectionIndexes]];
+		[selectionIndexes release];
+		selectionIndexes = [[_observedObjectForSelectionIndexes valueForKeyPath:_observedKeyPathForSelectionIndexes] mutableCopy];
+		//[self setValue:[observedObjectForSelectionIndex valueForKeyPath:observedKeyPathForSelectionIndex] forKey:@"selectionIndex"];
+	}	
+}
+- (void) unbind:bindingName {
+	//UKLog(@"GSSegmentedControl:unbind" );
+	if ([bindingName isEqualToString:@"contentArray"])
+	{
+		[_observedObjectForContentArray removeObserver:self forKeyPath:_observedKeyPathForContentArray];
+		[_observedObjectForContentArray release], _observedObjectForContentArray = nil;
+		[_observedKeyPathForContentArray release], _observedKeyPathForContentArray = nil;
+	}
+	if ([bindingName isEqualToString:@"selectionIndexes"])
+	{
+		[_observedObjectForSelectionIndexes removeObserver:self forKeyPath:_observedKeyPathForSelectionIndexes];
+		[_observedObjectForSelectionIndexes release], _observedObjectForSelectionIndexes = nil;
+		[_observedKeyPathForSelectionIndexes release], _observedKeyPathForSelectionIndexes = nil;
+	}
+	[super unbind:bindingName];
+}
+
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
-	if ([keyPath isEqualToString:@"backgroundColor"])
-		[self setNeedsDisplay:YES];
-	else if ([keyPath isEqual:zoomValueObserverKey]) {
-		if ([self respondsToSelector:@selector(zoomValueDidChange)])
-			[self performSelector:@selector(zoomValueDidChange)];
-	} else if ([keyPath isEqualToString:@"isCollapsed"]) {
-		[self softReloadDataWithCompletionBlock:^{
-			[self performSelector:@selector(scrollViewDidScroll:)];
-		}];
-	} else
-		[super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+	UKLog(@"keyPath: %@", keyPath );
+	if (context == ContentArrayBindingContext)
+	{
+		id newContentArray = [_observedObjectForContentArray valueForKeyPath:_observedKeyPathForContentArray];
+		//NSLog(@"GSSegmentedControl:observeValueForKeyPath:Masters %@", newMasters );
+		if ((newContentArray == NSNoSelectionMarker) ||
+			(newContentArray == NSNotApplicableMarker) ||
+			(newContentArray == NSMultipleValuesMarker))
+		{
+			//NSLog(@"GSSegmentedControl:observeValueForKeyPath:badSelectionForMasters" );
+			_badSelectionForContentArray = YES;
+		}
+		else {
+			_badSelectionForContentArray = NO;
+			//UKLog(@"newContentArray: %@", newContentArray);
+			//[self setContentArray:newContentArray];
+			[self reloadDataWithItems:newContentArray emptyCaches:NO];
+			//[self softReloadVisibleViewControllers];
+			lastSelectionIndex = NSNotFound;
+		} 
+	}
+	else if (context == SelectionIndexesBindingContext) {
+		id newSelectionIndex = [_observedObjectForSelectionIndexes valueForKeyPath:_observedKeyPathForSelectionIndexes];
+		
+		//UKLog(@"observedObjectForSelectionIndex %@", _observedObjectForSelectionIndexes );
+		if ((newSelectionIndex == NSNoSelectionMarker) ||
+			(newSelectionIndex == NSNotApplicableMarker) ||
+			(newSelectionIndex == NSMultipleValuesMarker))
+		{
+			//NSLog(@"GSSegmentedControl:observeValueForKeyPath:badSelectionForMasters" );
+			_badSelectionForSelectionIndexes = YES;
+		}
+		else {
+			_badSelectionForSelectionIndexes = NO;
+			//[self setValue:newSelectionIndex forKey:@"selectionIndex"];
+			UKLog(@"= %d newSelectionIndex: %@", _updateing, newSelectionIndex);
+			//if (!_updateing) {
+			NSIndexSet *OldSelectionIndexes = selectionIndexes;
+			
+			selectionIndexes = [newSelectionIndex mutableCopy];
+			//[[self window] makeFirstResponder:self];
+			//[self softReloadVisibleViewControllers];
+			for (NSString *number in visibleViewControllers) {
+				NSUInteger index = [number integerValue];
+				//NSViewController *controller = [visibleViewControllers objectForKey:number];
+				if (index < [contentArray count] && [selectionIndexes containsIndex:index]) {
+					[self delegateUpdateSelectionForItemAtIndex:index];
+				}
+				else {
+					[self delegateUpdateDeselectionForItemAtIndex:index];
+				}
+			}
+			NSMutableIndexSet *newIndexes = [newSelectionIndex mutableCopy];
+			[newIndexes removeIndexes:OldSelectionIndexes];
+			//UKLog(@"setSelectionIndexes: %@", indexes);
+			NSInteger Count = [contentArray count];
+			if (Count > [newIndexes firstIndex]) {
+				NSInteger ItemIndex;
+				if (lastSelectionIndex < Count && lastSelectionIndex >= 0) {
+					ItemIndex = lastSelectionIndex;
+				}
+				else {
+					ItemIndex = [newIndexes firstIndex];
+				}
+				NSRect ItemRect = [layoutManager rectOfItemAtIndex:ItemIndex];
+				if (ItemRect.size.width > 0)
+					[self scrollRectToVisible:NSInsetRect(ItemRect, -10, -10) ];
+			}
+			[newIndexes release];
+			[OldSelectionIndexes release];
+			
+			//}
+		}
+	}
+	else {
+		if ([keyPath isEqualToString:@"backgroundColor"])
+			[self setNeedsDisplay:YES];
+		else if ([keyPath isEqual:zoomValueObserverKey]) {
+			if ([self respondsToSelector:@selector(zoomValueDidChange)])
+				[self performSelector:@selector(zoomValueDidChange)];
+		}
+		else if ([keyPath isEqualToString:@"isCollapsed"]) {
+			[self softReloadDataWithCompletionBlock:^{
+				[self performSelector:@selector(scrollViewDidScroll:)];
+			}];
+		} 
+		else
+			[super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+	}
+	
+	//NSLog(@"GSSegmentedControl:observeValueForKeyPath:ende" );
+	[self setNeedsDisplay:YES];
 }
 
 - (void) dealloc
@@ -104,6 +263,7 @@
 
 - (void)drawItemSelectionForInRect:(NSRect)aRect
 {
+	return;
 	NSRect insetRect = NSInsetRect(aRect, 10, 10);
 	if ([self needsToDrawRect:insetRect]) {
 		[[NSColor lightGrayColor] set];
@@ -113,20 +273,63 @@
 
 - (void)drawRect:(NSRect)dirtyRect
 {
-	[backgroundColor ? backgroundColor : [NSColor whiteColor] set];
-	NSRectFill(dirtyRect);
+	NSRect VisibleRect = [self visibleRect];
+	if ([[self window] isMainWindow]) {
+		[[NSColor colorWithDeviceWhite:0.4 alpha:1] set];
+	}
+	else {
+		[[NSColor lightGrayColor] set];
+	}
+	NSRectFill(VisibleRect);
+	if ([contentArray count] == 0) return;
+	[[NSColor whiteColor] set];
+	NSArray * VisibleIndexes = [[visibleGroupViewControllers allKeys] sortedArrayUsingSelector:@selector(compare:)];
+	[[NSGraphicsContext currentContext] saveGraphicsState];
+	NSShadow* Shadow = [[NSShadow alloc] init];
+	[Shadow setShadowBlurRadius:5];
+	[Shadow setShadowOffset:NSMakeSize(1,-1)];
+	[Shadow setShadowColor:[NSColor blackColor]];
+	[Shadow set];
+	
+	NSBezierPath * BezierPath = [[NSBezierPath alloc] init];
+	NSUInteger LastVerticalOffset = NSNotFound;
+	NSInteger VerticalOffset;
+	for (NSNumber* GoupeIndex in VisibleIndexes) {
+		
+		NSUInteger Index = [GoupeIndex integerValue];
+		NSViewController * Group = [visibleGroupViewControllers objectForKey:GoupeIndex];
+		if (Index > 0 && LastVerticalOffset == NSNotFound ) {
+			LastVerticalOffset = NSMinY(VisibleRect) - 8;
+		}
+		VerticalOffset = NSMinY([[Group view] frame]) +8;
+		if (VerticalOffset - 4 > LastVerticalOffset && LastVerticalOffset < NSNotFound) {
+			NSRect GroupFrame = NSMakeRect(_border * 0.5f , LastVerticalOffset, VisibleRect.size.width - _border, VerticalOffset - LastVerticalOffset - 4);
+			//[BezierPath appendBezierPathWithRoundedRect:GroupFrame xRadius:3 yRadius:3];
+			//[BezierPath appendBezierPathWithRect:GroupFrame];
+			NSRectFill(GroupFrame);
+		}
+		LastVerticalOffset = VerticalOffset;
+	}
+	if (LastVerticalOffset == NSNotFound) {
+		LastVerticalOffset = NSMinY(VisibleRect) - 7;
+	}
+	BCCollectionViewLayoutItem *layoutItem = [[layoutManager itemLayouts] lastObject];
+	VerticalOffset = NSMaxY([layoutItem itemRect]) + 4;
+	if (VerticalOffset > 10) {
+		NSRect GroupFrame = NSMakeRect(_border * 0.5f , LastVerticalOffset, VisibleRect.size.width - _border, VerticalOffset - LastVerticalOffset);
+		//[BezierPath appendBezierPathWithRoundedRect:GroupFrame xRadius:3 yRadius:3];
+		//[BezierPath appendBezierPathWithRect:GroupFrame];
+		NSRectFill(GroupFrame);
+		
+		//UKLog(@"__BezierPath: %@", BezierPath);
+		//[BezierPath fill];
+	}
+	[BezierPath release];
+	
+	[[NSGraphicsContext currentContext] restoreGraphicsState];
 	
 	[[NSColor grayColor] set];
 	NSFrameRect(BCRectFromTwoPoints(mouseDownLocation, mouseDraggedLocation));
-	
-	if ([selectionIndexes count] > 0 && [self shoulDrawSelections]) {
-		for (NSNumber *number in visibleViewControllers)
-			if ([selectionIndexes containsIndex:[number integerValue]])
-				[self drawItemSelectionForInRect:[[[visibleViewControllers objectForKey:number] view] frame]];
-	}
-	
-	if (dragHoverIndex != NSNotFound && [self shoulDrawHover])
-		[self drawItemSelectionForInRect:[[[visibleViewControllers objectForKey:[NSNumber numberWithInteger:dragHoverIndex]] view] frame]];
 }
 
 #pragma mark Delegate Call Wrappers
@@ -146,8 +349,12 @@
 							 forItem:[contentArray objectAtIndex:index]];
 }
 
-- (void)delegateCollectionViewSelectionDidChange
-{
+- (void) delegateCollectionViewSelectionDidChange {
+	if (!selectionChangedDisabled) {
+		_updateing = YES;
+		[(NSArrayController*)_observedObjectForSelectionIndexes setSelectionIndexes:selectionIndexes];
+		_updateing = NO;
+	}
 	if (!selectionChangedDisabled && [delegate respondsToSelector:@selector(collectionViewSelectionDidChange:)]) {
 		[[NSRunLoop currentRunLoop] cancelPerformSelector:@selector(collectionViewSelectionDidChange:) target:delegate argument:self];
 		[(id)delegate performSelector:@selector(collectionViewSelectionDidChange:) withObject:self afterDelay:0.0];
@@ -554,7 +761,7 @@
 	}];
 }
 
-- (void)scrollViewDidScroll:(NSNotification *)note
+- (void) scrollViewDidScroll:(NSNotification *)note
 {
 	dispatch_async(dispatch_get_main_queue(), ^{
 		[self removeInvisibleViewControllers];

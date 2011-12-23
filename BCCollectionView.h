@@ -45,6 +45,17 @@
 	CGFloat lastPinchMagnification;
 
 	NSString *accumulatedKeyStrokes;
+	// Binding
+	id _observedObjectForContentArray;
+	NSString *_observedKeyPathForContentArray;
+	BOOL _badSelectionForContentArray;
+	
+	id _observedObjectForSelectionIndexes;
+	NSString *_observedKeyPathForSelectionIndexes;
+	BOOL _badSelectionForSelectionIndexes;
+	
+	BOOL _updateing;
+	
 }
 @property (nonatomic, assign) id<BCCollectionViewDelegate> delegate;
 @property (nonatomic, retain) NSColor *backgroundColor;
