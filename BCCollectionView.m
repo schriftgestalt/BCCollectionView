@@ -18,11 +18,10 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 
 @dynamic visibleViewControllerArray;
 
-//- (id)initWithCoder:(NSCoder *)aDecoder
-- (id) initWithFrame:(NSRect)frameRect
-{
-	self = [super initWithFrame:frameRect];
+- (id)initWithCoder:(NSCoder *)aDecoder {
+	self = [super initWithCoder:aDecoder];
 	if (self) {
+		animated = YES;
 		reusableViewControllers		= [[NSMutableArray alloc] init];
 		visibleViewControllers		= [[NSMutableDictionary alloc] init];
 		contentArray				= [[NSArray alloc] init];
@@ -43,7 +42,36 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 	return self;
 }
 
-- (void)bind:(NSString *)binding
+- (id) initWithFrame:(NSRect)frameRect
+{
+	self = [super initWithFrame:frameRect];
+	if (self) {
+		animated = YES;
+		reusableViewControllers		= [[NSMutableArray alloc] init];
+		visibleViewControllers		= [[NSMutableDictionary alloc] init];
+		contentArray				= [[NSArray alloc] init];
+		selectionIndexes			= [[NSMutableIndexSet alloc] init];
+		dragHoverIndex				= NSNotFound;
+		accumulatedKeyStrokes		= [[NSString alloc] init];
+		numberOfPreRenderedRows		= 3;
+		layoutManager				= [[BCCollectionViewLayoutManager alloc] initWithCollectionView:self];
+		visibleGroupViewControllers = [[NSMutableDictionary alloc] init];
+		//[self addObserver:self forKeyPath:@"backgroundColor" options:0 context:NULL];
+		_border = 10;
+//		NSClipView *enclosingClipView = [[self enclosingScrollView] contentView];
+//		[enclosingClipView setPostsBoundsChangedNotifications:YES];
+//		NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+//		[center addObserver:self selector:@selector(scrollViewDidScroll:) name:NSViewBoundsDidChangeNotification object:enclosingClipView];
+//		[center addObserver:self selector:@selector(viewDidResize) name:NSViewFrameDidChangeNotification object:self];
+	}
+	return self;
+}
+- (void) awakeFromNib {
+	//UKLog(@"__");
+	[super awakeFromNib];
+}
+
+- (void) bind:(NSString *)binding
 	toObject:(id)observableObject
  withKeyPath:(NSString *)keyPath
 	 options:(NSDictionary *)options
@@ -119,7 +147,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
-	UKLog(@"keyPath: %@", keyPath );
+	//UKLog(@"keyPath: %@", keyPath );
 	if (context == ContentArrayBindingContext)
 	{
 		id newContentArray = [_observedObjectForContentArray valueForKeyPath:_observedKeyPathForContentArray];
@@ -154,7 +182,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 		else {
 			_badSelectionForSelectionIndexes = NO;
 			//[self setValue:newSelectionIndex forKey:@"selectionIndex"];
-			UKLog(@"= %d newSelectionIndex: %@", _updateing, newSelectionIndex);
+			//UKLog(@"= %d newSelectionIndex: %@", _updateing, newSelectionIndex);
 			//if (!_updateing) {
 			NSIndexSet *OldSelectionIndexes = selectionIndexes;
 			
@@ -210,20 +238,20 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 	}
 	
 	//NSLog(@"GSSegmentedControl:observeValueForKeyPath:ende" );
-	[self setNeedsDisplay:YES];
+	//[self setNeedsDisplay:YES];
 }
 
 - (void) dealloc
 {
 	//[self removeObserver:self forKeyPath:@"backgroundColor"];
 	//[[NSUserDefaults standardUserDefaults] removeObserver:self forKeyPath:zoomValueObserverKey];
-
+	delegate = nil;
 	NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
 	[center removeObserver:self name:NSViewBoundsDidChangeNotification object:[[self enclosingScrollView] contentView]];
 	[center removeObserver:self name:NSViewFrameDidChangeNotification object:self];
 	
-	for (BCCollectionViewGroup *group in groups)
-		[group removeObserver:self forKeyPath:@"isCollapsed"];
+//	for (BCCollectionViewGroup *group in groups)
+//		[group removeObserver:self forKeyPath:@"isCollapsed"];
 	
 	[layoutManager release];
 	[reusableViewControllers release];
@@ -273,7 +301,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 {
 	NSRect VisibleRect = [self visibleRect];
 	if ([[self window] isMainWindow]) {
-		[[NSColor colorWithDeviceWhite:0.4 alpha:1] set];
+		[[NSColor colorWithDeviceWhite:0.4f alpha:1] set];
 	}
 	else {
 		[[NSColor lightGrayColor] set];
@@ -297,9 +325,9 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 		NSUInteger Index = [GoupeIndex integerValue];
 		NSViewController * Group = [visibleGroupViewControllers objectForKey:GoupeIndex];
 		if (Index > 0 && LastVerticalOffset == NSNotFound ) {
-			LastVerticalOffset = NSMinY(VisibleRect) - 8;
+			LastVerticalOffset = NSMinY(VisibleRect) - (_border * 0.5f);
 		}
-		VerticalOffset = NSMinY([[Group view] frame]) +8;
+		VerticalOffset = NSMinY([[Group view] frame]) + (_border * 0.5f);
 		if (VerticalOffset - 4 > LastVerticalOffset && LastVerticalOffset < NSNotFound) {
 			NSRect GroupFrame = NSMakeRect(_border * 0.5f , LastVerticalOffset, VisibleRect.size.width - _border, VerticalOffset - LastVerticalOffset - 4);
 			//[BezierPath appendBezierPathWithRoundedRect:GroupFrame xRadius:3 yRadius:3];
@@ -308,8 +336,13 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 		}
 		LastVerticalOffset = VerticalOffset;
 	}
-	if (LastVerticalOffset == NSNotFound) {
-		LastVerticalOffset = NSMinY(VisibleRect) - 7;
+	if (LastVerticalOffset == NSNotFound ) {
+		if ( [groups count] > 0) {
+			LastVerticalOffset = NSMinY(VisibleRect) - 7;
+		}
+		else {
+			LastVerticalOffset = (_border * 0.5f);
+		}
 	}
 	BCCollectionViewLayoutItem *layoutItem = [[layoutManager itemLayouts] lastObject];
 	VerticalOffset = NSMaxY([layoutItem itemRect]) + 4;
@@ -325,11 +358,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 	[BezierPath release];
 	
 	[[NSGraphicsContext currentContext] restoreGraphicsState];
-	if ([selectionIndexes count] > 0 && [self shoulDrawSelections]) {
-		for (NSNumber *number in visibleViewControllers)
-			if ([selectionIndexes containsIndex:[number integerValue]])
-				[self drawItemSelectionForInRect:[[[visibleViewControllers objectForKey:number] view] frame]];
-	}
+	[Shadow release];
 	[[NSColor grayColor] set];
 	NSFrameRect(BCRectFromTwoPoints(mouseDownLocation, mouseDraggedLocation));
 }
@@ -465,10 +494,14 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 {
 	NSNumber *key = [NSNumber numberWithInteger:anIndex];
 	NSViewController *viewController = [visibleViewControllers objectForKey:key];
-	[[viewController view] removeFromSuperview];
 	
+	//[[viewController view] removeFromSuperview];
 	[self delegateUpdateDeselectionForItemAtIndex:anIndex];
 	[self delegateViewControllerBecameInvisibleAtIndex:anIndex];
+
+	[viewController setRepresentedObject:nil];
+	[[viewController view] setFrameOrigin:NSMakePoint(-1000, 200)];
+	
 	
 	[reusableViewControllers addObject:viewController];
 	[visibleViewControllers removeObjectForKey:key];
@@ -502,7 +535,9 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 		
 		id itemToLoad = [contentArray objectAtIndex:anIndex];
 		[delegate collectionView:self willShowViewController:viewController forItem:itemToLoad];
-		[self addSubview:[viewController view]];
+		if ([[viewController view] superview] != self) {
+			[self addSubview:[viewController view]];
+		}
 		if ([selectionIndexes containsIndex:anIndex])
 			[self delegateUpdateSelectionForItemAtIndex:anIndex];
 	}
@@ -510,6 +545,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 
 - (void)addMissingGroupHeaders
 {
+	NSMutableArray * NotNeededGroucontrollers = [NSMutableArray arrayWithArray:[visibleGroupViewControllers allKeys]];
 	if ([groups count] > 0) {
 		[groups enumerateObjectsUsingBlock:^(id group, NSUInteger idx, BOOL *stop) {
 			NSRect groupRect = NSMakeRect(0, NSMinY([layoutManager rectOfItemAtIndex:[group itemRange].location])-[self groupHeaderHeight], NSWidth([self visibleRect]), [self groupHeaderHeight]);
@@ -518,18 +554,32 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 			
 			BOOL groupShouldBeVisible = NSIntersectsRect(groupRect, [self visibleRect]);
 			NSViewController *groupViewController = [visibleGroupViewControllers objectForKey:[NSNumber numberWithInteger:idx]];
-			[[groupViewController view] setFrame:groupRect];
-			[[groupViewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
-			if (groupShouldBeVisible && !groupViewController) {
-				groupViewController = [delegate collectionView:self headerForGroup:group];
-				[self addSubview:[groupViewController view]];
-				[visibleGroupViewControllers setObject:groupViewController forKey:[NSNumber numberWithInteger:idx]];
+			if (groupShouldBeVisible) {
+				if (!groupViewController) {
+					groupViewController = [delegate collectionView:self headerForGroup:group];
+					[self addSubview:[groupViewController view]];
+					[visibleGroupViewControllers setObject:groupViewController forKey:[NSNumber numberWithInteger:idx]];
+				}
+				[delegate collectionView:self willShowGroupHeader:groupViewController forGroup:group];
+				[NotNeededGroucontrollers removeObject:[NSNumber numberWithInteger:idx]];
 				[[groupViewController view] setFrame:groupRect];
-			} else if (!groupShouldBeVisible && groupViewController) {
+				[[groupViewController view] setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
+			}
+			else if (groupViewController) {
 				[[groupViewController view] removeFromSuperview];
 				[visibleGroupViewControllers removeObjectForKey:[NSNumber numberWithInteger:idx]];
 			}
 		}];
+		for (NSNumber * Key in NotNeededGroucontrollers) {
+			NSViewController * groupViewController = [visibleGroupViewControllers objectForKey:Key];
+			[[groupViewController view] removeFromSuperview];
+			[visibleGroupViewControllers removeObjectForKey:Key];
+		}
+	}
+	else {
+		for (NSViewController *viewController in [visibleGroupViewControllers allValues])
+			[[viewController view] removeFromSuperview];
+		[visibleGroupViewControllers removeAllObjects];
 	}
 }
 
@@ -544,16 +594,29 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 		[self addMissingGroupHeaders];
 	});
 }
-
-- (void)moveViewControllersToProperPosition
-{
+/*
+- (void)moveViewControllersToProperPosition {
+	if(animated)
+    {
+        [NSAnimationContext beginGrouping];
+        [[NSAnimationContext currentContext] setDuration:0.1];
+    }	
 	for (NSNumber *number in visibleViewControllers) {
-		NSRect r = [layoutManager rectOfItemAtIndex:[number integerValue]];
-		if (!NSEqualRects(r, NSZeroRect))
-			[[[visibleViewControllers objectForKey:number] view] setFrame:r];
+		NSRect rect = [layoutManager rectOfItemAtIndex:[number integerValue]];
+		if (!NSEqualRects(rect, NSZeroRect)) {
+			if(animated)
+				[[[[visibleViewControllers objectForKey:number] view] animator] setFrame:rect];
+			else
+				[[[visibleViewControllers objectForKey:number] view] setFrame:rect];
+		}
 	}
+	if(animated)
+        [NSAnimationContext endGrouping];
+	// there is sometimes a redraw problem if the contentarray is change. This reduces the likelihood, 
+	// but does not solve the problem
+	[self setNeedsDisplay:YES]; 
 }
-
+*/
 #pragma mark Selecting and Deselecting Items
 
 - (void)selectItemAtIndex:(NSUInteger)index
@@ -580,10 +643,11 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 		if (!bulkSelecting)
 			[self delegateCollectionViewSelectionDidChange];
 		if ([self shoulDrawSelections]) {
-			UKLog(@"__ ");
+			//UKLog(@"__ ");
 			[self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:index]];
 		}
 	}
+	
 	if (!bulkSelecting)
 		lastSelectionIndex = index;
 }
@@ -611,8 +675,8 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 //			[self setNeedsDisplayInRect:[layoutManager rectOfItemAtIndex:index]];
 //		}
 //		
-//		if (!bulkDeselecting)
-//			[self delegateCollectionViewSelectionDidChange];
+		if (!bulkDeselecting)
+			[self delegateCollectionViewSelectionDidChange];
 //		[self delegateDidDeselectItemAtIndex:index];
 //		[self delegateUpdateDeselectionForItemAtIndex:index];
 	}
@@ -660,32 +724,21 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 - (void)softReloadVisibleViewControllers
 {
 	NSMutableArray *removeKeys = [NSMutableArray array];
-	UKLog(@"__ selectionIndexes: %@", selectionIndexes);
+	//UKLog(@"__ selectionIndexes: %@", selectionIndexes);
 	for (NSString *number in visibleViewControllers) {
 		NSUInteger index = [number integerValue];
 		NSViewController *controller = [visibleViewControllers objectForKey:number];
 		
 		if (index < [contentArray count]) {
-//			if ([selectionIndexes containsIndex:index])
-//				[self delegateUpdateSelectionForItemAtIndex:index];
-//			else {
-//				[self delegateUpdateDeselectionForItemAtIndex:index];
-//			}			
 			[delegate collectionView:self willShowViewController:controller forItem:[contentArray objectAtIndex:index]];
 		} else {
-//			if ([selectionIndexes containsIndex:index])
-//				[self delegateUpdateSelectionForItemAtIndex:index];
-//			else {
-//			[self delegateUpdateDeselectionForItemAtIndex:index];
-//			}
 			[self delegateViewControllerBecameInvisibleAtIndex:index];
-			[[controller view] removeFromSuperview];
+			[[controller view] setFrameOrigin:NSMakePoint(-1000, 200)];
 			[reusableViewControllers addObject:controller];
 			[removeKeys addObject:number];
 		}
 	}
 	[visibleViewControllers removeObjectsForKeys:removeKeys];
-	//[self setNeedsDisplay:YES];
 }
 
 - (void)resizeFrameToFitContents
@@ -694,7 +747,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 	frame.size.height = [self visibleRect].size.height;
 	if ([contentArray count] > 0) {
 		BCCollectionViewLayoutItem *layoutItem = [[layoutManager itemLayouts] lastObject];
-		frame.size.height = MAX(frame.size.height, NSMaxY([layoutItem itemRect]));
+		frame.size.height = MAX(frame.size.height, NSMaxY([layoutItem itemRect]) + (_border / 2));
 	}
 	[self setFrame:frame];
 }
@@ -720,18 +773,18 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 	NSSize cellSize = [delegate cellSizeForCollectionView:self];
 	if (NSWidth([self frame]) < cellSize.width || NSHeight([self frame]) < cellSize.height)
 		return;
-	
-	for (BCCollectionViewGroup *group in groups)
-		[group removeObserver:self forKeyPath:@"isCollapsed"];
-	for (BCCollectionViewGroup *group in newGroups)
-		[group addObserver:self forKeyPath:@"isCollapsed" options:0 context:NULL];
+	// some notification info was leaking, need to reanable the functionality later.
+//	for (BCCollectionViewGroup *group in groups)
+//		[group removeObserver:self forKeyPath:@"isCollapsed"];
+//	for (BCCollectionViewGroup *group in newGroups)
+//		[group addObserver:self forKeyPath:@"isCollapsed" options:0 context:NULL];
 	
 	self.groups			 = newGroups;
 	self.contentArray = newContent;
 	
-	for (NSViewController *viewController in [visibleGroupViewControllers allValues])
-		[[viewController view] removeFromSuperview];
-	[visibleGroupViewControllers removeAllObjects];
+//	for (NSViewController *viewController in [visibleGroupViewControllers allValues])
+//		[[viewController view] removeFromSuperview];
+//	[visibleGroupViewControllers removeAllObjects];
 	
 	if (shouldEmptyCaches) {
 		for (NSViewController *viewController in [visibleViewControllers allValues]) {
@@ -759,6 +812,8 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 		[self resizeFrameToFitContents];
 		[self addMissingGroupHeaders];
 		dispatch_async(dispatch_get_main_queue(), completionBlock);
+		//UKLog(@"__reloadDataWithItems");
+		[self setNeedsDisplay:YES];
 	}];
 }
 
@@ -778,7 +833,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 	}
 }
 
-- (void)viewDidResize
+- (void) viewDidResize
 {
 	if ([contentArray count] > 0 && [visibleViewControllers count] > 0)
 		[self softReloadDataWithCompletionBlock:NULL];
@@ -811,7 +866,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 	}];
 }
 
-- (NSMenu *)menuForEvent:(NSEvent *)anEvent
+- (NSMenu *) menuForEvent:(NSEvent *)anEvent
 {
 	[self mouseDown:anEvent];
 	
@@ -825,6 +880,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 {
 	if ([delegate respondsToSelector:@selector(collectionViewLostFirstResponder:)])
 		[delegate collectionViewLostFirstResponder:self];
+	[self setNeedsDisplay:YES];
 	return [super resignFirstResponder];
 }
 
@@ -832,6 +888,7 @@ static void *ItemSizeBindingContext = (void *)@"itemSize";
 {
 	if ([delegate respondsToSelector:@selector(collectionViewBecameFirstResponder:)])
 		[delegate collectionViewBecameFirstResponder:self];
+	[self setNeedsDisplay:YES];
 	return [super becomeFirstResponder];
 }
 

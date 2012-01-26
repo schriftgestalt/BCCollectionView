@@ -47,6 +47,7 @@ enum {
 //working with groups
 - (NSUInteger)groupHeaderHeightForCollectionView:(BCCollectionView *)collectionView;
 - (NSViewController *)collectionView:(BCCollectionView *)collectionView headerForGroup:(BCCollectionViewGroup *)group;
+- (void) collectionView:(BCCollectionView *)iconView willShowGroupHeader:(NSViewController *)viewController forGroup:(id)group;
 - (NSInteger)topOffsetForItemsInCollectionView:(BCCollectionView *)collectionView;
 
 //managing Drag & Drop (in order of occurence)

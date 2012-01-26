@@ -132,6 +132,13 @@
   
   [self simpleExtendSelectionRange:range newIndex:newIndex];
 }
+- (void) scrollToBeginningOfDocument:(id) sender {
+	NSRect Frame = [self frame];
+	[self scrollRectToVisible:NSMakeRect(0, Frame.size.height - 10, 10, 10)];
+}
+- (void) scrollToEndOfDocument:(id) sender {
+	[self scrollRectToVisible:NSMakeRect(0, 0, 10, 10)];
+}
 
 #pragma mark Deleting
 

@@ -21,6 +21,9 @@
 	NSInteger y = 0;
 	NSUInteger colIndex   = 0;
 	NSRect visibleRect    = [collectionView visibleRect];
+	NSRect frame		  = [collectionView frame];
+	visibleRect.size.width = frame.size.width; // Visible Rect is sometimes not set properly when lanching.
+	UKLog(@"visibleRect: %@", NSStringFromRect(visibleRect));
 	NSSize cellSize       = [collectionView cellSize];
 	NSSize inset          = NSZeroSize;
 	NSInteger maxColumns  = [[collectionView layoutManager] maximumNumberOfItemsPerRow];
@@ -31,8 +34,8 @@
 //		x = gap;
 //	}
 	cellSize.width += gap;
-	if ([[collectionView delegate] respondsToSelector:@selector(insetMarginForSelectingItemsInCollectionView:)])
-		inset = [[collectionView delegate] insetMarginForSelectingItemsInCollectionView:collectionView];
+//	if ([[collectionView delegate] respondsToSelector:@selector(insetMarginForSelectingItemsInCollectionView:)])
+//		inset = [[collectionView delegate] insetMarginForSelectingItemsInCollectionView:collectionView];
 	
 	NSMutableArray *newLayouts   = [NSMutableArray array];
 	NSEnumerator *groupEnum      = [[collectionView groups] objectEnumerator];

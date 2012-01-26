@@ -22,12 +22,12 @@
 	mouseDraggedLocation	= mouseDownLocation;
 	NSUInteger index		= [layoutManager indexOfItemContentRectAtPoint:mouseDownLocation];
 	
-	if (index != NSNotFound && [delegate respondsToSelector:@selector(collectionView:didClickItem:withViewController:)])
-		[delegate collectionView:self didClickItem:[contentArray objectAtIndex:index] withViewController:[visibleViewControllers objectForKey:[NSNumber numberWithInt:index]]];
+//	if (index != NSNotFound && [delegate respondsToSelector:@selector(collectionView:didClickItem:withViewController:)])
+//		[delegate collectionView:self didClickItem:[contentArray objectAtIndex:index] withViewController:[visibleViewControllers objectForKey:[NSNumber numberWithInt:index]]];
 	
-	if (![self shiftOrCommandKeyPressed] && ![selectionIndexes containsIndex:index]) {
-		[selectionIndexes removeAllIndexes];
-		//[self deselectAllItems];
+	if ((!([theEvent modifierFlags] & NSShiftKeyMask || [theEvent modifierFlags] & NSCommandKeyMask) || index == NSNotFound) && ![selectionIndexes containsIndex:index]) {
+		//[selectionIndexes removeAllIndexes];
+		[self deselectAllItems];
 	}
 	
 	self.originalSelectionIndexes = [[selectionIndexes copy] autorelease];
@@ -35,10 +35,18 @@
 	if ([theEvent type] == NSLeftMouseDown && [theEvent clickCount] == 2 && [delegate respondsToSelector:@selector(collectionView:didDoubleClickViewControllerAtIndex:)])
 		[delegate collectionView:self didDoubleClickViewControllerAtIndex:[visibleViewControllers objectForKey:[NSNumber numberWithInt:index]]];
 	
-	if ([self shiftOrCommandKeyPressed] && [self.originalSelectionIndexes containsIndex:index])
+	if ((([theEvent modifierFlags] & NSShiftKeyMask || [theEvent modifierFlags] & NSCommandKeyMask)) && [self.originalSelectionIndexes containsIndex:index])
 		[self deselectItemAtIndex:index];
 	else {
-		if ([NSEvent modifierFlags] & NSCommandKeyMask || [[self originalSelectionIndexes] count] == 0) {
+		if ([theEvent modifierFlags] & NSCommandKeyMask) {
+			if ([self.originalSelectionIndexes containsIndex:index]) {
+				[self deselectItemAtIndex:index];
+			}
+			else {
+				[self selectItemAtIndex:index];
+			}
+		}
+		else if ([[self originalSelectionIndexes] count] == 0) {
 			[self selectItemAtIndex:index];
 			//[selectionIndexes addIndex:index];
 		}
